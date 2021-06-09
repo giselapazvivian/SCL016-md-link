@@ -36,7 +36,6 @@ const readMyFile = (filePath) => {
     })
 }
 
-
 indexModule.fileOrDir = fileOrDir;
 indexModule.readMyDir = readMyDir;
 indexModule.readMyFile = readMyFile;
