@@ -1,7 +1,5 @@
 const fs = require('fs');
-// const { pathToFileURL } = require('url');
 const indexModule = {};
-const path = require('path');
 
 const fileOrDir = (path_) => {
     let statModule = fs.lstatSync(path_);
@@ -17,23 +15,13 @@ const readMyDir = (dirPath) => {
     return new Promise((resolve, reject) => {
         fs.readdir(dirPath, (err, files) => {
             if (err) reject(err);
-            console.log(files)
-            let filesAbs = path.resolve(files);
-            console.log(filesAbs);
             filesList = files.filter(function (e) {
-                // const file = path.join(dirPath, e);
+                const file = path.join(dirPath, e);
                 //console.log(file);
                 return path.extname(e).toLowerCase() === '.md'
-            })
+              })
                 //  resolve(file);
-            console.log(filesList.length);
-            for (let i = 0; i < filesList.length; i++) {
-                let array = filesList[i]
-                console.log(array);
-                let arrayAbs = path.resolve(array);
-                console.log(arrayAbs);
-
-            }
+            console.log(filesList);
         })
     })
 }
