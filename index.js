@@ -47,9 +47,10 @@ const readMyDir = (dirPath) => {
                 // fileOrDir(filesAbs);
                 // console.log(filesAbs);
             })
-            // console.log(filesList);
+            
+            console.log(filesList);
             // Promise.all(filesList)
-            //     .then(result => { console.log(result)})
+            //     .then(result => { console.log("resultado",result)})
 
             // readMyFile(filesAbs);
             // console.log(filesList.length);
@@ -66,7 +67,7 @@ const readMyDir = (dirPath) => {
 const readMyFile = (filePath) => {
     return new Promise((resolve, reject) => {
         if (path.extname(filePath).toLowerCase() === '.md') {
-            const regex = /(https?:\/\/[^\s)]+)[^,). ]/;
+            const regex = /(https?:\/\/[^\s)]+)[^,). ]/g;
             fs.readFile(filePath, 'utf8', (err, data) => {
                 if (err) reject(err);
                 const matchData = data.match(regex);
@@ -76,7 +77,8 @@ const readMyFile = (filePath) => {
 
 
         } else {
-            reject(new Error("No es un archivo md"))
+            console.log("No es un archivo md");
+            // reject(new Error("No es un archivo md"))
         }
     })
 }
