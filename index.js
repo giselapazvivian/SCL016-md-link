@@ -3,20 +3,19 @@ const { resolve } = require('path');
 // const { pathToFileURL } = require('url');
 const indexModule = {};
 const path = require('path');
+const marked = require('marked');
 
 const fileOrDir = (path_) => {
     return new Promise((resolve, reject) => {
-
         let statModule = fs.lstatSync(path_);
     if (statModule.isDirectory()) {
         resolve (readMyDir(path_));
     }
     else {
         // console.log("entró a archivo", path_);
-        return readMyFile(path_);
+        resolve (readMyFile(path_))
     }
 })}
-
 const readMyDir = (dirPath) => {
     return new Promise((resolve, reject) => {
         fs.readdir(dirPath, (err, files) => {
@@ -47,11 +46,9 @@ const readMyDir = (dirPath) => {
                 // fileOrDir(filesAbs);
                 // console.log(filesAbs);
             })
-            
-            console.log(filesList);
+            // console.log(filesList);
             // Promise.all(filesList)
-            //     .then(result => { console.log("resultado",result)})
-
+            //     .then(result => { console.log(result)})
             // readMyFile(filesAbs);
             // console.log(filesList.length);
             // for (let i = 0; i < filesList.length; i++) {
@@ -63,30 +60,37 @@ const readMyDir = (dirPath) => {
         })
     })
 }
-
 const readMyFile = (filePath) => {
     return new Promise((resolve, reject) => {
         if (path.extname(filePath).toLowerCase() === '.md') {
             const regex = /(https?:\/\/[^\s)]+)[^,). ]/g;
+            const regExpTxt = /\[([\w\s\d\-]+)\]/g;
+            const regExpMsj = /(\*)/g;
             fs.readFile(filePath, 'utf8', (err, data) => {
                 if (err) reject(err);
+                // let data = marked(file);
+                console.log(data);
                 const matchData = data.match(regex);
-                resolve(matchData);
-
+                
+                const textLink = data.matchAll(regExpTxt);
+                console.log(textLink);
+                const mensLink = data.matchAll(regExpMsj);
+                const links = {
+                    match: matchData,
+                    text: textLink,
+                    message: mensLink
+                };
+                resolve(links);
             })
-
-
         } else {
             console.log("No es un archivo md");
             // reject(new Error("No es un archivo md"))
         }
     })
 }
-
-
-
 indexModule.fileOrDir = fileOrDir;
 indexModule.readMyDir = readMyDir;
 indexModule.readMyFile = readMyFile;
-
 module.exports = indexModule;
+
+

@@ -81,21 +81,6 @@ A continuación puedes ver los objetivos de aprendizaje de este proyecto:
 * [ ] [Configuración de npm-scripts](https://docs.npmjs.com/misc/scripts)
 * [ ] Uso de CLI (Command Line Interface - Interfaz de Línea de Comando)
 
-### Testing
-
-* [ ] [Testeo unitario.](https://jestjs.io/docs/es-ES/getting-started)
-* [ ] [Testeo asíncrono.](https://jestjs.io/docs/es-ES/asynchronous)
-* [ ] [Uso de librerias de Mock.](https://jestjs.io/docs/es-ES/manual-mocks)
-* [ ] Uso de Mocks manuales.
-* [ ] Testeo para múltiples Sistemas Operativos.
-
-### Estructura del código y guía de estilo
-
-* [ ] Organizar y dividir el código en módulos (Modularización)
-* [ ] Uso de identificadores descriptivos (Nomenclatura | Semántica)
-* [ ] Uso de linter (ESLINT)
-
-### Git y GitHub
 
 * [ ] Uso de comandos de git (add | commit | pull | status | push)
 * [ ] Manejo de repositorios de GitHub (clone | fork | gh-pages)
