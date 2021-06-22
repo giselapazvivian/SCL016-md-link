@@ -1,96 +1,190 @@
 const fs = require('fs');
-const { resolve } = require('path');
-// const { pathToFileURL } = require('url');
-const indexModule = {};
 const path = require('path');
-const marked = require('marked');
+const fetch = require('node-fetch');
 
-const fileOrDir = (path_) => {
-    return new Promise((resolve, reject) => {
-        let statModule = fs.lstatSync(path_);
-    if (statModule.isDirectory()) {
-        resolve (readMyDir(path_));
-    }
-    else {
-        // console.log("entró a archivo", path_);
-        resolve (readMyFile(path_))
-    }
-})}
-const readMyDir = (dirPath) => {
-    return new Promise((resolve, reject) => {
-        fs.readdir(dirPath, (err, files) => {
-            if (err) reject(err);
-            // console.log(files)
-            // let filesAbs = path.resolve(files);
-            // console.log(filesAbs);
-            // filesList = files.filter(function (e) {
-            //     // const file = path.join(dirPath, e);
-            //     //console.log(file);
-            //     return path.extname(e).toLowerCase() === '.md'
-            // })
-            //  resolve(file);
-            let filesList = files.map(e => {
-                // console.log("dirPath",dirPath);
-                let filesAbso = path.join(dirPath, e);
-                let statModule = fs.lstatSync(filesAbso);
-                if (statModule.isDirectory()) {
-                    // console.log("entró a directorio", path_);
-                    readMyDir(filesAbso);
-                }
-                else {
-                    // console.log("entró a archivo", path_);
-                    readMyFile(filesAbso)
-                    .then(result2 => {console.log(result2)})
-                }
-                // console.log("e", e);
-                // fileOrDir(filesAbs);
-                // console.log(filesAbs);
-            })
-            // console.log(filesList);
-            // Promise.all(filesList)
-            //     .then(result => { console.log(result)})
-            // readMyFile(filesAbs);
-            // console.log(filesList.length);
-            // for (let i = 0; i < filesList.length; i++) {
-            //     let array = filesList[i]
-            //     console.log(array);
-            //     let arrayAbs = path.resolve(array);
-            //     console.log(arrayAbs);
-            // }
+// const { rejects } = require('assert');
+const indexModule = {};
+
+
+
+const mdLinks = (Path, options) => {
+  return new Promise((resolve, rejects) => {
+    if (options.validate === false && options.stats === false) {
+      fileOrDir(Path)
+        .then(resp => {
+          resolve(resp)
         })
-    })
-}
-const readMyFile = (filePath) => {
-    return new Promise((resolve, reject) => {
-        if (path.extname(filePath).toLowerCase() === '.md') {
-            const regex = /(https?:\/\/[^\s)]+)[^,). ]/g;
-            const regExpTxt = /\[([\w\s\d\-]+)\]/g;
-            const regExpMsj = /(\*)/g;
-            fs.readFile(filePath, 'utf8', (err, data) => {
-                if (err) reject(err);
-                // let data = marked(file);
-                console.log(data);
-                const matchData = data.match(regex);
-                
-                const textLink = data.matchAll(regExpTxt);
-                console.log(textLink);
-                const mensLink = data.matchAll(regExpMsj);
-                const links = {
-                    match: matchData,
-                    text: textLink,
-                    message: mensLink
-                };
-                resolve(links);
+        .catch(err => {
+          rejects(err)
+        })
+    } else if (options.validate === true && options.stats === false) {
+      fileOrDir(Path)
+        .then(links => {
+          validateOpt(links)
+            .then(res => {
+              resolve(res);
             })
-        } else {
-            console.log("No es un archivo md");
-            // reject(new Error("No es un archivo md"))
-        }
-    })
+        })
+        .catch(err => {
+          rejects(err)
+        });
+    } else if (options.validate === false && options.stats === true) {
+      fileOrDir(Path)
+        .then(res => {
+          resolve(stats(res));
+        });
+    } else if (options.validate === true && options.stats === true) {
+      fileOrDir(Path)
+        .then(res => {
+          resolve(statsValidate(res))
+        });
+    }
+
+  });
+};
+
+//Verificar si es directorio o archivo
+const fileOrDir = (Path) => {
+  const path_ = path.resolve(Path).replace(/\\/g, "/");
+  return new Promise((resolve, reject) => {
+    fs.stat(path_, (error_, status_) => {
+      if (error_) {
+        reject(error_)
+      } else if (status_.isFile()) {
+        resolve(readFileMd(path_))
+      } else if (status_.isDirectory()) {
+        resolve(readMyDir(path_));
+      }
+    });
+  });
+};
+
+const readFileMd = (filePath) => {
+  let exten = path.extname(filePath).toLowerCase()
+  if (exten === '.md') {
+    return readMyFile(filePath)
+  } else {
+    console.log("No es un archivo md");
+  }
 }
-indexModule.fileOrDir = fileOrDir;
-indexModule.readMyDir = readMyDir;
+//encontrar links en archivo con expresión regular
+const findLinks = (fileLinks) => {
+  const regex = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g;
+  return fileLinks.matchAll(regex);
+};
+
+//Leer contenido archivo
+const readMyFile = (pathMyFile) => {
+  return new Promise((resolve, rejects) => {
+    fs.readFile(pathMyFile, "utf-8", (err_, data_) => {
+      if (err_) {
+        rejects(err_);
+      }
+      let arr = [];
+      let index = 0;
+      for (const link_ of findLinks(data_)) {
+        const object_ = {
+          href: link_[2],
+          text: link_[1],
+          file: pathMyFile,
+        };
+        arr[index] = object_;
+        index++;
+      }
+      //resolve(validateOpt(arr));
+      resolve(arr);
+    });
+  });
+};
+
+//Agregar status y ok 
+const validateOpt = (arrayLinks) => {
+  const statusLink = arrayLinks.map((obj) =>
+    fetch(obj.href)
+    .then((res) => {
+      if (res.status === 200) {
+        return {
+          href: obj.href,
+          text: obj.text,
+          file: obj.file,
+          status: res.status,
+          statusText: 'ok',
+        };
+      } else {
+        return {
+          href: obj.href,
+          text: obj.text,
+          file: obj.file,
+          status: res.status,
+          statusText: 'Fail',
+        };
+      }
+    })
+    .catch((err) =>
+      ({
+        href: obj.href,
+        text: obj.text,
+        file: obj.file,
+        status: 404,
+        statusText: 'Fail',
+      }),
+    ));
+  return Promise.all(statusLink);
+};
+
+//traer información opción --stats
+const stats = (validateOpt) => {
+  let statsObj = {}
+  statsObj.Total = validateOpt.length;
+  statsObj.Unique = 0;
+  const uniqueLnks = new Set();
+  validateOpt.forEach(obj => {
+    uniqueLnks.add(obj.href);
+  });
+  statsObj.Unique = uniqueLnks.size;
+  return statsObj;
+};
+
+// Opciones --stats y --validate
+const statsValidate = (validateArray) => {
+  const statsObject = {};
+  statsObject.Total = validateArray.length;
+  statsObject.Unique = 0;
+  statsObject.Broken = 0;
+  const uniqueLinks = new Set();
+  validateArray.forEach(object => {
+    uniqueLinks.add(object.href);
+    if (object.statusText === 'Fail') {
+      statsObject.Broken += 1;
+    }
+  });
+  statsObject.Unique = uniqueLinks.size;
+  return statsObject;
+};
+
+const readMyDir = (dirPath) => {
+  return new Promise((resolve, reject) => {
+    fs.readdir(dirPath, (err, files) => {
+      if (err) reject(err);
+      let filesList = files.map(e => {
+        let filesAbso = path.join(dirPath, e);
+        let statModule = fs.lstatSync(filesAbso);
+        if (statModule.isDirectory()) {
+          readMyDir(filesAbso);
+        } else {
+          readMyFile(filesAbso)
+            .then(result2 => {
+              console.log(result2)
+            })
+        }
+      })
+    })
+  })
+}
+
+
+
+
+indexModule.mdLinks = mdLinks;
 indexModule.readMyFile = readMyFile;
 module.exports = indexModule;
-
-
